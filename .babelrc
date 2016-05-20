@@ -1,0 +1,9 @@
+{
+  "plugins": [
+    "syntax-function-bind",
+    "transform-function-bind"
+  ],
+  "presets": [
+    "es2016"
+  ]
+}

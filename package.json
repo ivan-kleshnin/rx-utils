@@ -1,0 +1,43 @@
+{
+  "name": "rx-utils",
+  "version": "0.1.0",
+  "author": "Ivan Kleshnin",
+  "description": "High-level RxJS utils",
+  "license": "MIT",
+  "bugs": "https://github.com/ivan-kleshnin/rx-utils/issues",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/ivan-kleshnin/rx-utils"
+  },
+  "keywords": [
+    "reactive",
+    "rx",
+    "rxjs"
+  ],
+  "main": "lib/index.js",
+  "dependencies": {},
+  "peerDependencies": {
+    "ramda": "*",
+    "rx": "*"
+  },
+  "devDependencies": {
+    "babel-cli": "^6.9.0",
+    "babel-plugin-syntax-function-bind": "^6.8.0",
+    "babel-plugin-transform-function-bind": "^6.8.0",
+    "babel-preset-es2016": "^6.0.11",
+    "ramda": "^0.21.0",
+    "rx": "^4.1.0"
+  },
+  "engines": {
+    "node": ">=5.4.1"
+  },
+  "scripts": {
+    "precompile": "rm -rf lib && mkdir -p lib",
+    "compile": "babel -d lib/ src/",
+    "prepublish": "npm run compile",
+    "release": "npm run release-patch",
+    "release-patch": "git checkout master && git commit -a -m 'Build'; npm version patch && git push origin master --tags && npm publish --access=public",
+    "release-minor": "git checkout master && git commit -a -m 'Build'; npm version minor && git push origin master --tags && npm publish --access=public",
+    "release-major": "git checkout master && git commit -a -m 'Build'; npm version major && git push origin master --tags && npm publish --access=public"
+  }
+}
