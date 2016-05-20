@@ -1,5 +1,5 @@
 let R = require("ramda")
-let {curry, identity, is, map, not, repeat, split, takeLast} = require("ramda")
+let {append, curry, identity, is, map, not, repeat, split, takeLast} = require("ramda")
 let memoize = require("memoizee")
 let {Observable: $} = require("rx")
 
