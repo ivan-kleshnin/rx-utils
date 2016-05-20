@@ -15,7 +15,9 @@
     "rxjs"
   ],
   "main": "lib/index.js",
-  "dependencies": {},
+  "dependencies": {
+    "memoizee": "^0.3.10"
+  },
   "peerDependencies": {
     "ramda": "*",
     "rx": "*"
