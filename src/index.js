@@ -32,21 +32,23 @@ let scanFn = curry((state, updateFn) => {
 
 // LIBRARY =========================================================================================
 
-// Make an observable of fragments of upstream values
+// Lensing
+
+// Make an observable of fragments of upstream values.
 // (Observable a ->) String -> Observable b
 let pluck = function (path) {
   let ls = lens(path)
   return this.map((v) => R.view(ls, v)).share()
 }
 
-//Make an observable of a fragment of upstream values
+// Make an observable of a fragment of upstream values.
 // (Observable a ->) [String] -> Observable b
 let pluckN = function (paths) {
   let lss = map(lens, paths)
   return this.map((v) => map((ls) => R.view(ls, v), lss)).share()
 }
 
-// Make an observable of a state fragment
+// Make an observable of a state fragment.
 // (Observable a ->) String -> Observable b
 let view = memoize(function (path) {
   let ls = lens(path)
@@ -56,7 +58,7 @@ let view = memoize(function (path) {
     .shareReplay(1)
 })
 
-// Make an observable of state fragments
+// Make an observable of state fragments.
 // (Observable a ->) [String] -> Observable b
 let viewN = memoize(function (paths) {
   let lss = map(lens, paths)
@@ -66,28 +68,41 @@ let viewN = memoize(function (paths) {
     .shareReplay(1)
 })
 
-// Derive a state observable from state observables
-// (* -> b) -> [Observable *] -> Observable b
-let deriveN = curry((deriveFn, os) => {
-  return $.combineLatest(...os, deriveFn).distinctUntilChanged().shareReplay(1)
-})
+// Apply function to upstream value, apply resulting function to state fragment.
+// (Observable uv ->) String, (uv -> (sv -> sv)) -> Observable fn
+let toOverState = function (path, fn) {
+  let ls = lens(path)
+  return this.map((v) => (s) => R.over(ls, fn(v), s))
+}
 
-// Derive a state observable from a state observable
-// (a -> b) -> Observable a -> Observable b
-let derive = curry((deriveFn, os) => {
-  return deriveN(deriveFn, [os])
-})
+// Apply function to upstream value, replace state fragment with resulting value.
+// (Observable uv ->) String, (uv -> sv) -> Observable fn
+let toSetState = function (path, fn) {
+  let ls = lens(path)
+  return this.map((v) => (s) => R.set(ls, fn(v), s))
+}
 
-// Apply `viewFn` to combined observable values with debounce (to avoid glitches)
-// (...* -> VNode) -> [Observable *] -> Observable VNode
-let render = curry((viewFn, os) => {
-  return $
-    .combineLatest(...os)
-    .debounce(1)
-    .map((args) => viewFn(...args))
-})
+// Apply function to state fragment.
+// (Observable uv ->) String, (sv -> sv) -> Observable fn
+let overState = function (path, fn) {
+  return this::toOverState(path, always(fn))
+}
 
-// State reducer (transform obserbable of functions and a seed value to observable of states)
+// Replace state fragment with an argument value.
+// (Observable uv ->) String, sv -> Observable fn
+let setState = function (path, v) {
+  return this::toSetState(path, always(v))
+}
+
+// Replace state fragment with upstream value.
+// (Observable v ->) String -> Observable fn
+let toState = function (path) {
+  return this::toSetState(path, identity)
+}
+
+// State
+
+// Canonical state reducer.
 // s -> Observable (s -> s) -> Observable s
 let store = curry((seed, update) => {
   return update
@@ -97,7 +112,19 @@ let store = curry((seed, update) => {
     .shareReplay(1)
 })
 
-// Make observable of `n` last upstream values
+// Derive a state observable from a state observable
+// (a -> b) -> Observable a -> Observable b
+let derive = curry((deriveFn, os) => {
+  return deriveN(deriveFn, [os])
+})
+
+// Derive a state observable from state observables.
+// (* -> b) -> [Observable *] -> Observable b
+let deriveN = curry((deriveFn, os) => {
+  return $.combineLatest(...os, deriveFn).distinctUntilChanged().shareReplay(1)
+})
+
+// Make observable of n last upstream values.
 // (Observable s ->) Number -> Observable [s]
 let history = function (n) {
   if (n <= 0) {
@@ -106,69 +133,54 @@ let history = function (n) {
   return this.scan((stateHistory, newState) => {
     return takeLast(n, append(newState, stateHistory))
   }, repeat(null, n))
+    .distinctUntilChanged()
+    .shareReplay(1)
 }
 
-// Apply fn to upstream value, apply resulting function to state fragment
-// (Observable uv ->) String, (uv -> (sv -> sv)) -> Observable fn
-let toOverState = function (path, fn) {
-  let ls = lens(path)
-  return this.map((v) => (s) => R.over(ls, fn(v), s))
-}
+// Filtering
 
-// Apply `fn` to upstream value, replace state fragment with resulting value
-// (Observable uv ->) String, (uv -> sv) -> Observable fn
-let toSetState = function (path, fn) {
-  let ls = lens(path)
-  return this.map((v) => (s) => R.set(ls, fn(v), s))
-}
-
-// Apply `fn` to state fragment
-// (Observable uv ->) String, (sv -> sv) -> Observable fn
-let overState = function (path, fn) {
-  return this::toOverState(path, always(fn))
-}
-
-// Replace state fragment with v
-// (Observable uv ->) String, sv -> Observable fn
-let setState = function (path, v) {
-  return this::toSetState(path, always(v))
-}
-
-// Replace state fragment with upstream value
-// (Observable v ->) String -> Observable fn
-let toState = function (path) {
-  return this::toSetState(path, identity)
-}
-
-// Filter observable by another observable (true: keep)
+// Filter observable by another observable (true = keep).
 // (Observable a ->) Observable Boolean -> Observable a
 let filterBy = function (o) {
   return this.withLatestFrom(o).filter(snd).map(fst)
 }
 
-// Filter observable by another observable (true: drop)
+// Filter observable by another observable (true = drop).
 // (Observable a ->) Observable Boolean -> Observable a
 let rejectBy = function (o) {
   return this::filterBy(o.map(not))
 }
 
-// Pass upstream value futher if it's fragment satisfies `filterFn`
+// Pass upstream value futher if its fragment satisfies a predicate.
 // (Observable a ->) String -> v -> Observable b
 let at = function (path, filterFn) {
   return this.sample(this::pluck(path).filter(filterFn))
 }
 
-// Pass upstream value futher if it's fragment is true
+// Pass upstream value futher if it's fragment is true.
 // (Observable a ->) String -> Observable b
 let atTrue = function (path) {
   return this::at(path, identity)
 }
 
-// Pass upstream value futher if it's fragment is false
+// Pass upstream value futher if its fragment is false.
 // (Observable a ->) String -> Observable b
 let atFalse = function (path) {
   return this::at(path, not(identity))
 }
+
+// Other
+
+// Apply a function over observable values in a glitch-free way.
+// (...* -> a) -> [Observable *] -> Observable a
+let render = curry((viewFn, os) => {
+  return $
+    .combineLatest(...os)
+    .debounce(1)
+    .map((args) => viewFn(...args))
+})
+
+// EXPORTS =========================================================================================
 
 // Helpers
 exports.scanFn = scanFn
@@ -180,7 +192,6 @@ exports.view = view
 exports.viewN = viewN
 exports.derive = derive
 exports.deriveN = deriveN
-exports.render = render
 
 // State core
 exports.store = store
@@ -199,3 +210,6 @@ exports.rejectBy = rejectBy
 exports.at = at
 exports.atTrue = atTrue
 exports.atFalse = atFalse
+
+// Other
+exports.render = render
