@@ -83,41 +83,95 @@ $ npm install rx-utils
 #### `pluck`
 
 Make an observable of fragments of upstream values.<br/>
-Like native `.pluck` with nested paths support.
+Like native `.pluck` with nested path support.
+
+Example
+
+```js
+stream::pluck(...)
+```
 
 #### `pluckN`
 
 Make an observable of a fragment of upstream values.
+
+Example
+
+```js
+stream::pluckN(...)
+```
 
 #### `view`
 
 Make an observable of a state fragment.<br/>
 `pluck(...)` + `distinctUntilChanged()` + `shareReplay(1)`
 
+Example
+
+```js
+state::view(...)
+```
+
 #### `viewN`
 
 Make an observable of state fragments.<br/>
 `pluckN(...)` + `distinctUntilChanged()` + `shareReplay(1)`
 
+Example
+
+```js
+state::viewN(...)
+```
+
 #### `toOverState`
 
 Apply function to upstream value, apply resulting function to state fragment.
+
+Example
+
+```js
+action::toOverState(...)
+```
 
 #### `toSetState`
 
 Apply function to upstream value, replace state fragment with resulting value.
 
+Example
+
+```js
+action::toSetState(...)
+```
+
 #### `overState`
 
 Apply function to state fragment.
+
+Example
+
+```js
+action::overState(...)
+```
 
 #### `setState`
 
 Replace state fragment with an argument value.
 
+Example
+
+```js
+action::setState(...)
+```
+
 #### `toState`
 
 Replace state fragment with upstream value.
+
+Example
+
+```js
+action::toState(...)
+```
 
 ### State
 
@@ -127,11 +181,23 @@ Canonical state reducer.
 
 `scan(...)` + `distinctUntilChanged()` + `shareReplay(1)`
 
+Example
+
+```js
+update::store(...)
+```
+
 #### `derive`
 
 Derive a state observable from a state observable.
 
 `combineLatest(...)` + `distinctUntilChanged()` + `shareReplay(1)`
+
+Example
+
+```js
+derive(...)
+```
 
 #### `deriveN`
 
@@ -139,11 +205,23 @@ Derive a state observable from state observables.
 
 `this` + `combineLatest(...)` + `distinctUntilChanged()` + `shareReplay(1)`
 
+Example
+
+```js
+deriveN(...)
+```
+
 #### `history`
 
 Make observable of n last upstream values.
 
 `this` + `scan` + `distinctUntilChanged()` + `shareReplay(1)`
+
+Example
+
+```js
+state::history(...)
+```
 
 ### Filtering & Sampling
 
@@ -151,24 +229,61 @@ Make observable of n last upstream values.
 
 Filter observable by another observable (true = keep).
 
+Example
+
+```js
+intent::filterBy(...)
+```
+
 #### `rejectBy`
 
 Filter observable by another observable (true = drop).
+
+Example
+
+```js
+intent::rejectBy(...)
+```
 
 #### `at`
 
 Pass upstream value futher if its fragment satisfies a predicate.
 
+Example
+
+```js
+flags::at(...)::overState(...)
+```
+
 #### `atTrue`
 
 Pass upstream value futher if its fragment is true.
 
+Example
+
+```js
+flags::atTrue(...)::overState(...)
+```
+
+
 #### `atFalse`
 
 Pass upstream value futher if its fragment is false.
+
+Example
+
+```js
+flags::atFalse(...)::overState(...)
+```
 
 ### Other
 
 #### `render`
 
 Apply a function over observable values in a glitch-free way.
+
+Example
+
+```js
+let DOM = render(gameView, [state, derived.flags])
+```

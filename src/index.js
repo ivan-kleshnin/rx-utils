@@ -35,21 +35,21 @@ let scanFn = curry((state, updateFn) => {
 // Lensing
 
 // Make an observable of fragments of upstream values.
-// (Observable a ->) String -> Observable b
+// (($ a),) String -> $ b
 let pluck = function (path) {
   let ls = lens(path)
   return this.map((v) => R.view(ls, v)).share()
 }
 
 // Make an observable of a fragment of upstream values.
-// (Observable a ->) [String] -> Observable b
+// (($ a),) [String] -> $ b
 let pluckN = function (paths) {
   let lss = map(lens, paths)
   return this.map((v) => map((ls) => R.view(ls, v), lss)).share()
 }
 
 // Make an observable of a state fragment.
-// (Observable a ->) String -> Observable b
+// (($ a),) String -> $ b
 let view = memoize(function (path) {
   let ls = lens(path)
   return this
@@ -59,7 +59,7 @@ let view = memoize(function (path) {
 })
 
 // Make an observable of state fragments.
-// (Observable a ->) [String] -> Observable b
+// (($ a),) [String] -> $ b
 let viewN = memoize(function (paths) {
   let lss = map(lens, paths)
   return this
@@ -69,33 +69,33 @@ let viewN = memoize(function (paths) {
 })
 
 // Apply function to upstream value, apply resulting function to state fragment.
-// (Observable uv ->) String, (uv -> (sv -> sv)) -> Observable fn
+// (($ uv),) String, (uv -> (sv -> sv)) -> $ fn
 let toOverState = function (path, fn) {
   let ls = lens(path)
   return this.map((v) => (s) => R.over(ls, fn(v), s))
 }
 
 // Apply function to upstream value, replace state fragment with resulting value.
-// (Observable uv ->) String, (uv -> sv) -> Observable fn
+// (($ uv),) String, (uv -> sv) -> $ fn
 let toSetState = function (path, fn) {
   let ls = lens(path)
   return this.map((v) => (s) => R.set(ls, fn(v), s))
 }
 
 // Apply function to state fragment.
-// (Observable uv ->) String, (sv -> sv) -> Observable fn
+// (($ uv),) String, (sv -> sv) -> $ fn
 let overState = function (path, fn) {
   return this::toOverState(path, always(fn))
 }
 
 // Replace state fragment with an argument value.
-// (Observable uv ->) String, sv -> Observable fn
+// (($ uv),) String, sv -> $ fn
 let setState = function (path, v) {
   return this::toSetState(path, always(v))
 }
 
 // Replace state fragment with upstream value.
-// (Observable v ->) String -> Observable fn
+// (($ v),) String -> $ fn
 let toState = function (path) {
   return this::toSetState(path, identity)
 }
@@ -103,7 +103,7 @@ let toState = function (path) {
 // State
 
 // Canonical state reducer.
-// s -> Observable (s -> s) -> Observable s
+// s -> $ (s -> s) -> $ s
 let store = curry((seed, update) => {
   return update
     .startWith(seed)
@@ -113,19 +113,19 @@ let store = curry((seed, update) => {
 })
 
 // Derive a state observable from a state observable
-// (a -> b) -> Observable a -> Observable b
+// (a -> b) -> $ a -> $ b
 let derive = curry((deriveFn, os) => {
   return deriveN(deriveFn, [os])
 })
 
 // Derive a state observable from state observables.
-// (* -> b) -> [Observable *] -> Observable b
+// (* -> b) -> [$ *] -> $ b
 let deriveN = curry((deriveFn, os) => {
   return $.combineLatest(...os, deriveFn).distinctUntilChanged().shareReplay(1)
 })
 
 // Make observable of n last upstream values.
-// (Observable s ->) Number -> Observable [s]
+// (($ s),) Number -> $ [s]
 let history = function (n) {
   if (n <= 0) {
     throw Error("n must be an unsigned integer, got "+ String(n))
@@ -140,31 +140,31 @@ let history = function (n) {
 // Filtering
 
 // Filter observable by another observable (true = keep).
-// (Observable a ->) Observable Boolean -> Observable a
+// (($ a),) $ Boolean -> $ a
 let filterBy = function (o) {
   return this.withLatestFrom(o).filter(snd).map(fst)
 }
 
 // Filter observable by another observable (true = drop).
-// (Observable a ->) Observable Boolean -> Observable a
+// (($ a),) $ Boolean -> $ a
 let rejectBy = function (o) {
   return this::filterBy(o.map(not))
 }
 
 // Pass upstream value futher if its fragment satisfies a predicate.
-// (Observable a ->) String -> v -> Observable b
+// (($ a),) String, v -> $ a
 let at = function (path, filterFn) {
   return this.sample(this::pluck(path).filter(filterFn))
 }
 
 // Pass upstream value futher if it's fragment is true.
-// (Observable a ->) String -> Observable b
+// (($ a),) String -> $ a
 let atTrue = function (path) {
   return this::at(path, identity)
 }
 
 // Pass upstream value futher if its fragment is false.
-// (Observable a ->) String -> Observable b
+// (($ a),) String -> $ a
 let atFalse = function (path) {
   return this::at(path, not(identity))
 }
@@ -172,7 +172,7 @@ let atFalse = function (path) {
 // Other
 
 // Apply a function over observable values in a glitch-free way.
-// (...* -> a) -> [Observable *] -> Observable a
+// (... -> a), [$ *] -> $ a
 let render = curry((viewFn, os) => {
   return $
     .combineLatest(...os)
