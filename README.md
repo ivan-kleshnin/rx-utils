@@ -88,7 +88,7 @@ Like native `.pluck` with nested path support.
 Example
 
 ```js
-stream::pluck(...)
+intent::pluck("parentNode.dataset")
 ```
 
 #### `pluckN`
@@ -98,7 +98,7 @@ Make an observable of a fragment of upstream values.
 Example
 
 ```js
-stream::pluckN(...)
+intent::pluckN(["parentNode.dataset1", "parentNode.dataset2"])
 ```
 
 #### `view`
@@ -109,7 +109,7 @@ Make an observable of a state fragment.<br/>
 Example
 
 ```js
-state::view(...)
+state::view("user.email")
 ```
 
 #### `viewN`
@@ -120,7 +120,7 @@ Make an observable of state fragments.<br/>
 Example
 
 ```js
-state::viewN(...)
+state::viewN(["user.password", "user.passwordAgain"])
 ```
 
 #### `toOverState`
