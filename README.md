@@ -1,14 +1,16 @@
 # RxJS utils
 
+Documentation in progress... :turtle:
+
 High-level RxJS utils built to be used with bind operator (`::`, proposal stage).<br/>
 Use library to increase readability and decrease code size for complex reactive dependencies.
 
+API for state helpers is built around
+[Functional Reducer](https://github.com/ivan-kleshnin/reactive-states#functional-reducer) pattern.
+
+##### Notes
+
 `Observable` is aliased as `$` for brevity.
-
-State examples imply [Functional Reducer](https://github.com/ivan-kleshnin/reactive-states#functional-reducer)
-pattern being used.
-
-API implies `$ u` type for `this` variable (`u` for "upstream").
 
 #### Sample 1
 
@@ -84,6 +86,8 @@ $ npm install rx-utils
 ```
 
 ## API
+
+`$ u` type for `this` variable (`u` for "upstream") is implied and omitted for brevity.
 
 ### State
 
