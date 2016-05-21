@@ -1,5 +1,5 @@
 let R = require("ramda")
-let {append, curry, identity, is, map, not, repeat, split, takeLast} = require("ramda")
+let {append, curry, identity, map, not, repeat, split, takeLast} = require("ramda")
 let memoize = require("memoizee")
 let {Observable: $} = require("rx")
 
@@ -27,7 +27,7 @@ let snd = (xs) => xs[1]
 
 // s -> (s -> s) -> s
 let scanFn = curry((state, updateFn) => {
-  if (!is(Function, updateFn) || updateFn.length != 1) {
+  if (!R.is(Function, updateFn) || updateFn.length != 1) {
     throw Error("updateFn must be a function with arity 1, got " + updateFn)
   } else {
     return updateFn(state)
