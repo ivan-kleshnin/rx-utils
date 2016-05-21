@@ -8,6 +8,8 @@ Use library to increase readability and decrease code size for complex reactive 
 State examples imply [Functional Reducer](https://github.com/ivan-kleshnin/reactive-states#functional-reducer)
 pattern being used.
 
+API implies `$ u` type for `this` variable (`u` for "upstream").
+
 #### Sample 1
 
 ```js
@@ -83,6 +85,56 @@ $ npm install rx-utils
 
 ## API
 
+### State
+
+#### `store`
+
+Canonical state reducer.
+
+`scan(...)` + `distinctUntilChanged()` + `shareReplay(1)`
+
+##### Example
+
+```js
+update::store(...)
+```
+
+#### `history`
+
+Make observable of n last upstream values.
+
+`this` + `scan` + `distinctUntilChanged()` + `shareReplay(1)`
+
+##### Example
+
+```js
+state::history(...)
+```
+
+#### `derive`
+
+Derive a state observable from a state observable.
+
+`combineLatest(...)` + `distinctUntilChanged()` + `shareReplay(1)`
+
+##### Example
+
+```js
+derive(...)
+```
+
+#### `deriveN`
+
+Derive a state observable from state observables.
+
+`this` + `combineLatest(...)` + `distinctUntilChanged()` + `shareReplay(1)`
+
+##### Example
+
+```js
+deriveN(...)
+```
+
 ### Lensing
 
 #### `pluck`
@@ -128,7 +180,7 @@ Make an observable of state fragments.<br/>
 state::viewN(["user.password", "user.passwordAgain"])
 ```
 
-#### `toOverState`
+#### `toOverState : String, (u -> (sf -> sf)) -> $ (s -> s)`
 
 Apply function to upstream value, apply resulting function to state fragment.
 
@@ -142,13 +194,9 @@ createUser::toOverState("users", (u) => assoc(u.id, u))
 createUser.map((u) => (s) => assocPath(["users", u.id], u, s))
 ```
 
-#### `toSetState`
+#### `toSetState : String, (sf -> sf) -> $ (s -> s)`
 
 Apply function to upstream value, replace state fragment with resulting value.
-
-```js
-toSetState = function (path, fn) {}
-```
 
 ##### Example
 
@@ -159,7 +207,7 @@ resetUsers::toSetState("users", (us) => map(..., us))
 resetUsers.map((us) => (s) => assoc("users", map(..., us), s))
 ```
 
-#### `overState`
+#### `overState : String, (sf -> sf) -> $ (s -> s)`
 
 Apply function to state fragment. Upstream value does not matter.
 
@@ -171,16 +219,12 @@ overState = function (path, fn) {}
 
 ```js
 // increment : $ Boolean
-let update = $.merge(
-  increment::overState("counter", (c) => c + 1)
-)
+increment::overState("counter", (c) => c + 1)
 // ==
-let update = $.merge(
-  increment.map((_) => (s) => assoc("counter", s.counter + 1, s))
-)
+increment.map((_) => (s) => assoc("counter", s.counter + 1, s))
 ```
 
-#### `setState`
+#### `setState : String, v -> $ (s -> s)`
 
 Replace state fragment with a value. Upstream value does not matter.
 
@@ -197,7 +241,7 @@ resetForm::setState("form", seedForm)
 resetForm.map((_) => (s) => assoc("form", seedForm, s))
 ```
 
-#### `toState`
+#### `toState : String -> $ (s -> s)`
 
 Replace state fragment with upstream value.
 
@@ -214,57 +258,7 @@ changeUsername::toState("form.username"),
 changeUsername.map((v) => (s) => assocPath(["form", "username"], v, s))
 ```
 
-### State
-
-#### `store`
-
-Canonical state reducer.
-
-`scan(...)` + `distinctUntilChanged()` + `shareReplay(1)`
-
-##### Example
-
-```js
-update::store(...)
-```
-
-#### `derive`
-
-Derive a state observable from a state observable.
-
-`combineLatest(...)` + `distinctUntilChanged()` + `shareReplay(1)`
-
-##### Example
-
-```js
-derive(...)
-```
-
-#### `deriveN`
-
-Derive a state observable from state observables.
-
-`this` + `combineLatest(...)` + `distinctUntilChanged()` + `shareReplay(1)`
-
-##### Example
-
-```js
-deriveN(...)
-```
-
-#### `history`
-
-Make observable of n last upstream values.
-
-`this` + `scan` + `distinctUntilChanged()` + `shareReplay(1)`
-
-##### Example
-
-```js
-state::history(...)
-```
-
-### Filtering & Sampling
+### Filtering & sampling
 
 #### `filterBy`
 
@@ -305,7 +299,6 @@ Pass upstream value futher if its fragment is true.
 ```js
 flags::atTrue(...)::overState(...)
 ```
-
 
 #### `atFalse`
 
