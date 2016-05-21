@@ -55,15 +55,18 @@ let errors = store(seeds, $.merge(
 ))
 ```
 
-## Use
+## Install
 
 ```
-$ npm install babel-preset-es2016 --save
-$ npm install babel-plugin-syntax-function-bind --save
-$ npm install babel-plugin-transform-function-bind --save
+$ npm install babel-preset-es2016
+$ npm install babel-plugin-syntax-function-bind
+$ npm install babel-plugin-transform-function-bind
+$ npm install rx
+$ npm install ramda
+$ npm install rx-utils
 ```
 
-Put
+Add to `.babelrc`:
 
 ```json
 {
@@ -77,12 +80,12 @@ Put
 }
 ```
 
-into `.babelrc`.
+## Use
 
-## Install
+```js
+let {view} = require("rx-utils"
 
-```
-$ npm install rx-utils
+let userEmailStream = stateStream::view("user.email")
 ```
 
 ## API
