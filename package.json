@@ -1,6 +1,6 @@
 {
   "name": "rx-utils",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "author": "Ivan Kleshnin",
   "description": "High-level RxJS utils",
   "license": "MIT",
