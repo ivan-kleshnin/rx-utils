@@ -211,10 +211,6 @@ resetUsers.map((us) => (s) => assoc("users", map(..., us), s))
 
 Apply function to state fragment. Upstream value does not matter.
 
-```js
-overState = function (path, fn) {}
-```
-
 ##### Example
 
 ```js
@@ -228,10 +224,6 @@ increment.map((_) => (s) => assoc("counter", s.counter + 1, s))
 
 Replace state fragment with a value. Upstream value does not matter.
 
-```js
-setState = function (path, v) {}
-```
-
 ##### Example
 
 ```js
@@ -244,10 +236,6 @@ resetForm.map((_) => (s) => assoc("form", seedForm, s))
 #### `toState : String -> $ (s -> s)`
 
 Replace state fragment with upstream value.
-
-```js
-toState = function (path) {}
-```
 
 ##### Example
 
