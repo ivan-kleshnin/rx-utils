@@ -3,6 +3,10 @@
 High-level RxJS utils built to be used with bind operator (`::`, proposal stage).<br/>
 Use library to increase readability and decrease code size for complex reactive dependencies.
 
+All code snippets alias `Observable` as `$` for brevity.
+
+State examples imply [Functional Reducer](https://github.com/ivan-kleshnin/reactive-states#functional-reducer) being used.
+
 #### Sample 1
 
 ```js
@@ -20,7 +24,7 @@ derived.flags
 #### Sample 2
 
 ```js
-Observable
+$
   .combineLatest(src.navi, state2, derived.flags)
   .debounce(1)
   .map([src.navi, state2, derived.flags], gameView)
@@ -130,47 +134,102 @@ Apply function to upstream value, apply resulting function to state fragment.
 Example
 
 ```js
-action::toOverState(...)
+createUser::toOverState("users", (u) => assoc(u.id, u))
+```
+
+Equivalent
+
+```js
+createUser.map((u) => (s) => assocPath(["users", u.id], u, s))
 ```
 
 #### `toSetState`
 
 Apply function to upstream value, replace state fragment with resulting value.
 
+```js
+toSetState = function (path, fn) {}
+```
+
 Example
 
 ```js
-action::toSetState(...)
+resetUsers::toSetState("users", (us) => map(..., us))
+```
+
+Equivalent
+
+```js
+resetUsers.map((us) => (s) => assoc("users", map(..., us), s))
 ```
 
 #### `overState`
 
-Apply function to state fragment.
+Apply function to state fragment. Upstream value does not matter.
+
+```js
+overState = function (path, fn) {}
+```
 
 Example
 
 ```js
-action::overState(...)
+// increment : $ Boolean
+let update = $.merge(
+  increment::overState("counter", (c) => c + 1)
+)
+```
+
+Equivalent
+
+```js
+// increment : $ Boolean
+let update = $.merge(
+  increment.map((_) => (s) => assoc("counter", s.counter + 1, s))
+)
 ```
 
 #### `setState`
 
-Replace state fragment with an argument value.
+Replace state fragment with a value. Upstream value does not matter.
+
+```
+setState = function (path, v) {}
+```
 
 Example
 
 ```js
-action::setState(...)
+// reset : $ Boolean
+resetForm::setState("form", seedForm)
+```
+
+Equivalent
+
+```js
+// reset : $ Boolean
+resetForm.map((_) => (s) => assoc("form", seedForm, s))
 ```
 
 #### `toState`
 
 Replace state fragment with upstream value.
 
+```js
+toState = function (path) {}
+```
+
 Example
 
 ```js
-action::toState(...)
+// changeUsername : $ String
+changeUsername::toState("form.username"),
+```
+
+Equivalent
+
+```js
+changeUsername.map((v) => (s) => assocPath(["form", "username"], v, s))
 ```
 
 ### State
