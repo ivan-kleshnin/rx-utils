@@ -3,9 +3,10 @@
 High-level RxJS utils built to be used with bind operator (`::`, proposal stage).<br/>
 Use library to increase readability and decrease code size for complex reactive dependencies.
 
-All code snippets alias `Observable` as `$` for brevity.
+`Observable` is aliased as `$` for brevity.
 
-State examples imply [Functional Reducer](https://github.com/ivan-kleshnin/reactive-states#functional-reducer) being used.
+State examples imply [Functional Reducer](https://github.com/ivan-kleshnin/reactive-states#functional-reducer)
+pattern being used.
 
 #### Sample 1
 
@@ -89,7 +90,7 @@ $ npm install rx-utils
 Make an observable of fragments of upstream values.<br/>
 Like native `.pluck` with nested path support.
 
-Example
+##### Example
 
 ```js
 intent::pluck("parentNode.dataset")
@@ -99,7 +100,7 @@ intent::pluck("parentNode.dataset")
 
 Make an observable of a fragment of upstream values.
 
-Example
+##### Example
 
 ```js
 intent::pluckN(["parentNode.dataset1", "parentNode.dataset2"])
@@ -110,7 +111,7 @@ intent::pluckN(["parentNode.dataset1", "parentNode.dataset2"])
 Make an observable of a state fragment.<br/>
 `pluck(...)` + `distinctUntilChanged()` + `shareReplay(1)`
 
-Example
+##### Example
 
 ```js
 state::view("user.email")
@@ -121,7 +122,7 @@ state::view("user.email")
 Make an observable of state fragments.<br/>
 `pluckN(...)` + `distinctUntilChanged()` + `shareReplay(1)`
 
-Example
+##### Example
 
 ```js
 state::viewN(["user.password", "user.passwordAgain"])
@@ -131,15 +132,13 @@ state::viewN(["user.password", "user.passwordAgain"])
 
 Apply function to upstream value, apply resulting function to state fragment.
 
-Example
+##### Example
 
 ```js
+// createUser : $ User
 createUser::toOverState("users", (u) => assoc(u.id, u))
-```
-
-Equivalent
-
-```js
+// ==
+// createUser : $ User
 createUser.map((u) => (s) => assocPath(["users", u.id], u, s))
 ```
 
@@ -151,15 +150,12 @@ Apply function to upstream value, replace state fragment with resulting value.
 toSetState = function (path, fn) {}
 ```
 
-Example
+##### Example
 
 ```js
+// resetUsers : $ User
 resetUsers::toSetState("users", (us) => map(..., us))
-```
-
-Equivalent
-
-```js
+// ==
 resetUsers.map((us) => (s) => assoc("users", map(..., us), s))
 ```
 
@@ -171,19 +167,14 @@ Apply function to state fragment. Upstream value does not matter.
 overState = function (path, fn) {}
 ```
 
-Example
+##### Example
 
 ```js
 // increment : $ Boolean
 let update = $.merge(
   increment::overState("counter", (c) => c + 1)
 )
-```
-
-Equivalent
-
-```js
-// increment : $ Boolean
+// ==
 let update = $.merge(
   increment.map((_) => (s) => assoc("counter", s.counter + 1, s))
 )
@@ -193,21 +184,16 @@ let update = $.merge(
 
 Replace state fragment with a value. Upstream value does not matter.
 
-```
+```js
 setState = function (path, v) {}
 ```
 
-Example
+##### Example
 
 ```js
 // reset : $ Boolean
 resetForm::setState("form", seedForm)
-```
-
-Equivalent
-
-```js
-// reset : $ Boolean
+// ==
 resetForm.map((_) => (s) => assoc("form", seedForm, s))
 ```
 
@@ -219,16 +205,12 @@ Replace state fragment with upstream value.
 toState = function (path) {}
 ```
 
-Example
+##### Example
 
 ```js
 // changeUsername : $ String
 changeUsername::toState("form.username"),
-```
-
-Equivalent
-
-```js
+// ==
 changeUsername.map((v) => (s) => assocPath(["form", "username"], v, s))
 ```
 
@@ -240,7 +222,7 @@ Canonical state reducer.
 
 `scan(...)` + `distinctUntilChanged()` + `shareReplay(1)`
 
-Example
+##### Example
 
 ```js
 update::store(...)
@@ -252,7 +234,7 @@ Derive a state observable from a state observable.
 
 `combineLatest(...)` + `distinctUntilChanged()` + `shareReplay(1)`
 
-Example
+##### Example
 
 ```js
 derive(...)
@@ -264,7 +246,7 @@ Derive a state observable from state observables.
 
 `this` + `combineLatest(...)` + `distinctUntilChanged()` + `shareReplay(1)`
 
-Example
+##### Example
 
 ```js
 deriveN(...)
@@ -276,7 +258,7 @@ Make observable of n last upstream values.
 
 `this` + `scan` + `distinctUntilChanged()` + `shareReplay(1)`
 
-Example
+##### Example
 
 ```js
 state::history(...)
@@ -288,7 +270,7 @@ state::history(...)
 
 Filter observable by another observable (true = keep).
 
-Example
+##### Example
 
 ```js
 intent::filterBy(...)
@@ -298,7 +280,7 @@ intent::filterBy(...)
 
 Filter observable by another observable (true = drop).
 
-Example
+##### Example
 
 ```js
 intent::rejectBy(...)
@@ -308,7 +290,7 @@ intent::rejectBy(...)
 
 Pass upstream value futher if its fragment satisfies a predicate.
 
-Example
+##### Example
 
 ```js
 flags::at(...)::overState(...)
@@ -318,7 +300,7 @@ flags::at(...)::overState(...)
 
 Pass upstream value futher if its fragment is true.
 
-Example
+##### Example
 
 ```js
 flags::atTrue(...)::overState(...)
@@ -329,7 +311,7 @@ flags::atTrue(...)::overState(...)
 
 Pass upstream value futher if its fragment is false.
 
-Example
+##### Example
 
 ```js
 flags::atFalse(...)::overState(...)
@@ -341,7 +323,7 @@ flags::atFalse(...)::overState(...)
 
 Apply a function over observable values in a glitch-free way.
 
-Example
+##### Example
 
 ```js
 let DOM = render(gameView, [state, derived.flags])
