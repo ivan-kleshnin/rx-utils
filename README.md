@@ -83,7 +83,7 @@ Add to `.babelrc`:
 ## Use
 
 ```js
-let {view} = require("rx-utils"
+let {view} = require("rx-utils")
 
 let userEmailStream = stateStream::view("user.email")
 ```
