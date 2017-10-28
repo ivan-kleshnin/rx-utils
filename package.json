@@ -12,34 +12,33 @@
   "keywords": [
     "reactive",
     "rx",
-    "rxjs"
+    "rxjs",
+    "utils"
   ],
-  "main": "lib/index.js",
-  "dependencies": {
-    "memoizee": "^0.3.10"
-  },
+  "main": "build/index.js",
   "peerDependencies": {
-    "ramda": "*",
-    "rx": "*"
+    "rxjs": "*"
   },
   "devDependencies": {
-    "babel-cli": "^6.9.0",
-    "babel-plugin-syntax-function-bind": "^6.8.0",
-    "babel-plugin-transform-function-bind": "^6.8.0",
-    "babel-preset-es2016": "^6.0.11",
-    "ramda": "^0.21.0",
-    "rx": "^4.1.0"
+    "babel-cli": "^6.26.0",
+    "babel-preset-env": "^1.6.1",
+    "rxjs": "^5.5.2"
   },
   "engines": {
-    "node": ">=5.4.1"
+    "node": ">=6.0.0"
   },
   "scripts": {
     "precompile": "rm -rf lib && mkdir -p lib",
-    "compile": "babel -d lib/ src/",
+    "compile": "babel src/ -d build/",
     "prepublish": "npm run compile",
     "release": "npm run release-patch",
     "release-patch": "npm version patch && git push origin master --tags && npm publish --access=public",
     "release-minor": "npm version minor && git push origin master --tags && npm publish --access=public",
     "release-major": "npm version major && git push origin master --tags && npm publish --access=public"
+  },
+  "babel": {
+    "presets": [
+      "env"
+    ]
   }
 }

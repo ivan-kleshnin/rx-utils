@@ -1,215 +1,76 @@
-let R = require("ramda")
-let {append, curry, identity, map, not, repeat, split, takeLast} = require("ramda")
-let memoize = require("memoizee")
-let {Observable: $} = require("rx")
+import {Observable as O, Subject as S} from "rxjs"
+import * as R from "./_helpers"
 
-// HELPERS =========================================================================================
+let sndComplement = R.complement(R.snd)
 
-// String -> Lens
-let lens = curry((path) => {
-  return path ?
-    R.lensPath(split(".", path)) :
-    R.lensPath([])
-})
+// Passes values from `a$` further when `b$` is truthy.
+// passIfHigh :: Obs b -> Obs a -> Obs a
+export let passIfHigh = (obs) => (self) => {
+  return self.withLatestFrom(obs).filter(R.snd).map(R.fst)
+}
 
-// a -> b -> a
-let always = curry((x, y) => x)
+// Passes values from `a$` instance further when `b$` is falsy.
+// passIfLow :: Obs b -> Obs a -> Obs a
+export let passIfLow = (obs) => (self) => {
+  return self.withLatestFrom(obs).filter(sndComplement).map(R.fst)
+}
 
-// [a] -> a
-let fst = (xs) => xs[0]
+// Passes values from `a$` further when `b$` is truthy, including the switch moment.
+// passIfUp :: Obs b -> Obs a -> Obs a
+export let passIfUp = (obs) => (self) => {
+  return self.combineLatest(obs).filter(R.snd).map(R.fst)
+}
 
-// [a] -> a
-let snd = (xs) => xs[1]
+// Passes values from `a$` further when `b$` is falsy, including the switch moment.
+// passIfDown :: Obs b -> Obs a -> Obs a
+export let passIfDown = (obs) => (self) => {
+  return self.combineLatest(obs).filter(sndComplement).map(R.fst)
+}
 
-// LIBRARY =========================================================================================
+// Merges an object of streams to a stream of objects.
+// mergeObj :: Object (Obs *) -> Obs *
+export let mergeObj = (obj) => {
+  obj = R.flattenObj(obj)
+  let values = R.values(obj) // streams
+  return O.merge(...values)
+}
 
-// Helpers
+// Combines an object of streams to a stream of objects.
+// combineLatestObj :: Object (Obs *) -> Obs *
+export let combineLatestObj = (obj) => {
+  // a nicer analogy of https://github.com/staltz/combineLatestObj/blob/master/index.js
+  let keys = R.keys(obj)     // stream names
+  let values = R.values(obj) // streams
+  return O.combineLatest(values, (...args) => {
+    return R.zipObj(keys, args)
+  })
+}
 
-// s -> (s -> s) -> s
-let scanFn = curry((state, updateFn) => {
-  if (!R.is(Function, updateFn) || updateFn.length != 1) {
-    throw Error("updateFn must be a function with arity 1, got " + updateFn)
-  } else {
-    return updateFn(state)
+// Merges an object of streams to a stream of objects, keeping the original key data.
+// mergeObjTracking :: Object (Obs *) -> Obs {key :: String, value :: *}
+export let mergeObjTracking = (obj) => {
+  obj = R.mapObjIndexed((value, key) => {
+    return value.map(data => ({key, data}))
+  }, obj)
+  let values = R.values(obj) // streams
+  return O.merge(...values)
+}
+
+// Makes a callable observable.
+// chan :: (Obs a -> Obs b) -> Obs (State -> State)
+// chan :: a -> Promise State
+export let chan = (letFn) => {
+  let subj = new S()
+  function bus(...callArgs) {
+    if (callArgs.length <= 1) {
+      subj.next(callArgs[0]) // no return value
+    }
+    else {
+      subj.next(callArgs) // no return value
+    }
   }
-})
-
-// State core
-
-// Canonical (functional) state reducer.
-// s -> $ (s -> s) -> $ s
-let store = curry((seed, update) => {
-  return update
-    .startWith(seed)
-    .scan(scanFn)
-    .distinctUntilChanged()
-    .shareReplay(1)
-})
-
-// Make observable of n last upstream values.
-// Number -> $ [s]
-let history = function (n) {
-  if (n <= 0) {
-    throw Error("n must be an unsigned integer, got "+ String(n))
-  }
-  return this.scan((stateHistory, newState) => {
-    return takeLast(n, append(newState, stateHistory))
-  }, repeat(null, n))
-    .distinctUntilChanged()
-    .shareReplay(1)
+  let obs = letFn(subj)
+  Object.setPrototypeOf(bus, obs)      // support basic calls
+  bus.apply = Function.prototype.apply // support spreads
+  return bus
 }
-
-// Derive a state observable from a state observable
-// (a -> b) -> $ a -> $ b
-let derive = curry((deriveFn, os) => {
-  return deriveN(deriveFn, [os])
-})
-
-// Derive a state observable from state observables.
-// (* -> b) -> [$ *] -> $ b
-let deriveN = curry((deriveFn, os) => {
-  return $.combineLatest(...os, deriveFn).distinctUntilChanged().shareReplay(1)
-})
-
-// Lensing
-
-// Make an observable of fragments of upstream values.
-// String -> $ a
-let pluck = function (path) {
-  let ls = lens(path)
-  return this.map((v) => R.view(ls, v)).share()
-}
-
-// Make an observable of a fragment of upstream values.
-// [String] -> $ a
-let pluckN = function (paths) {
-  let lss = map(lens, paths)
-  return this.map((v) => map((ls) => R.view(ls, v), lss)).share()
-}
-
-// Make an observable of a state fragment.
-// String -> $ a
-let view = memoize(function (path) {
-  let ls = lens(path)
-  return this
-    .map((v) => R.view(ls, v))
-    .distinctUntilChanged()
-    .shareReplay(1)
-})
-
-// Make an observable of state fragments.
-// [String] -> $ a
-let viewN = memoize(function (paths) {
-  let lss = map(lens, paths)
-  return this
-    .map((v) => map((ls) => R.view(ls, v), lss))
-    .distinctUntilChanged()
-    .shareReplay(1)
-})
-
-// Apply function to upstream value, apply resulting function to state fragment.
-// String, (u -> (sf -> sf)) -> $ (s -> s)
-let toOverState = function (path, fn) {
-  let ls = lens(path)
-  return this.map((v) => (s) => R.over(ls, fn(v), s))
-}
-
-// Apply function to upstream value, replace state fragment with resulting value.
-// String, (sf -> sf) -> $ (s -> s)
-let toSetState = function (path, fn) {
-  let ls = lens(path)
-  return this.map((v) => (s) => R.set(ls, fn(v), s))
-}
-
-// Apply function to state fragment.
-// String, (sf -> sf) -> $ (s -> s)
-let overState = function (path, fn) {
-  return this::toOverState(path, always(fn))
-}
-
-// Replace state fragment with a value. Upstream value does not matter.
-// String, v -> $ (s -> s)
-let setState = function (path, v) {
-  return this::toSetState(path, always(v))
-}
-
-// Replace state fragment with upstream value.
-// String -> $ (s -> s)
-let toState = function (path) {
-  return this::toSetState(path, identity)
-}
-
-// Filtering & sampling
-
-// Filter observable by another observable (true = keep).
-// $ Boolean -> $ u
-let filterBy = function (o) {
-  return this.withLatestFrom(o).filter(snd).map(fst)
-}
-
-// Filter observable by another observable (true = drop).
-// $ Boolean -> $ u
-let rejectBy = function (o) {
-  return this::filterBy(o.map(not))
-}
-
-// Pass upstream value futher if its fragment satisfies a predicate.
-// String, v -> $ u
-let at = function (path, filterFn) {
-  return this.sample(this::pluck(path).filter(filterFn))
-}
-
-// Pass upstream value futher if it's fragment is true.
-// String -> $ u
-let atTrue = function (path) {
-  return this::at(path, identity)
-}
-
-// Pass upstream value futher if its fragment is false.
-// String -> $ u
-let atFalse = function (path) {
-  return this::at(path, not(identity))
-}
-
-// Other
-
-// Apply a function over observable values in a glitch-free way.
-// (... -> a), [$ *] -> $ a
-let render = curry((viewFn, os) => {
-  return $
-    .combineLatest(...os)
-    .debounce(1)
-    .map((args) => viewFn(...args))
-})
-
-// EXPORTS =========================================================================================
-
-// Helpers
-exports.scanFn = scanFn
-
-// State core
-exports.store = store
-exports.history = history
-exports.derive = derive
-exports.deriveN = deriveN
-
-// Lensing
-exports.pluck = pluck
-exports.pluckN = pluckN
-exports.view = view
-exports.viewN = viewN
-exports.toOverState = toOverState
-exports.toSetState = toSetState
-exports.overState = overState
-exports.setState = setState
-exports.toState = toState
-
-// Filtering & sampling
-exports.filterBy = filterBy
-exports.rejectBy = rejectBy
-exports.at = at
-exports.atTrue = atTrue
-exports.atFalse = atFalse
-
-// Other
-exports.render = render

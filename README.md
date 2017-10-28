@@ -1,318 +1,137 @@
 # RxJS utils
 
-Documentation in progress... :turtle:
+High-level RxJS operators.
 
-High-level RxJS utils built to be used with bind operator (`::`, proposal stage).<br/>
-Use library to increase readability and decrease code size for complex reactive dependencies.
-
-API for state helpers is built around
-[Functional Reducer](https://github.com/ivan-kleshnin/reactive-states#functional-reducer) pattern.
-
-##### Notes
-
-`Observable` is aliased as `$` for brevity.
-
-#### Sample 1
-
-```js
-derived.flags
-  .sample(derived.flags.map((fs) => fs.winGame)
-  .filter(identity)).map((_) => (s) => assoc("ended", "win", s))
-
-// =>
-
-derived.flags
-  ::atTrue("winGame")
-  ::setState("ended", "win")
-```
-
-#### Sample 2
-
-```js
-$
-  .combineLatest(src.navi, state2, derived.flags)
-  .debounce(1)
-  .map([src.navi, state2, derived.flags], gameView)
-
-// =>
-
-render(gameView, [src.navi, state2, derived.flags]),
-```
-
-#### Sample 3
-
-```js
-let errors = store(seeds, $.merge(
-  state.map((s) => s.user.points).skip(1).map((x) => validate(Points)).map((p) => (s) => assocPath(["user", "points"], p, s)),
-  state.map((s) => s.user.bonus).skip(1).map((x) => validate(Bonus)).map((p) => (s) => assocPath(["user", "points"], p, s))
-))
-
-// =>
-
-let errors = store(seeds, $.merge(
-  state::view("user.points").skip(1).map((x) => validate(Points))::toState("user.points"),
-  state::view("user.bonus").skip(1).map((x) => validate(Bonus))::toState("user.bonus")
-))
-```
-
-## Install
+#### Legend
 
 ```
-$ npm install babel-preset-es2016
-$ npm install babel-plugin-syntax-function-bind
-$ npm install babel-plugin-transform-function-bind
-$ npm install rx
-$ npm install ramda
-$ npm install rx-utils
+stateless stream: --x--y-->
+stateful stream:  ==x==y==>
 ```
 
-Add to `.babelrc`:
+Stateless stream is a stream of events. Stateful stream is a stream of data having the value "between"
+the events. Stateful streams in RxJS can be made by `statelessStream.shareReplay(1)`.
 
-```json
-{
-  "plugins": [
-    "syntax-function-bind",
-    "transform-function-bind"
-  ],
-  "presets": [
-    "es2016"
-  ]
-}
-```
+#### Dependencies
 
-## Use
+* RxJS (peer)
 
-```js
-let {view} = require("rx-utils")
-
-let userEmailStream = stateStream::view("user.email")
-```
+Here and below `Rx.Observable` type may be aliased as `Obs` and its instances as `O` for brevity.
 
 ## API
 
-`$ u` type for `this` variable (`u` for "upstream") is implied and omitted for brevity.
+#### `passIfHigh :: Obs b -> Obs a -> Obs a`
 
-### State
+Passes values from `a$` further when `b$` is truthy.
 
-#### `store`
+Example: TODO
 
-Canonical state reducer.
+#### `passIfLow :: Obs b -> Obs a -> Obs a`
 
-`scan(...)` + `distinctUntilChanged()` + `shareReplay(1)`
+Passes values from `a$` instance further when `b$` is falsy.
 
-##### Example
+Example: TODO
 
-```js
-update::store(...)
-```
+#### `passIfUp :: Obs b -> Obs a -> Obs a`
 
-#### `history`
+Passes values from `a$` further when `b$` is truthy, including the switch moment.
 
-Make observable of n last upstream values.
+Example: TODO
 
-`this` + `scan` + `distinctUntilChanged()` + `shareReplay(1)`
+#### `passIfDown :: Obs b -> Obs a -> Obs a`
 
-##### Example
+Passes values from `a$` further when `b$` is falsy, including the switch moment.
 
-```js
-state::history(...)
-```
-
-#### `derive`
-
-Derive a state observable from a state observable.
-
-`combineLatest(...)` + `distinctUntilChanged()` + `shareReplay(1)`
-
-##### Example
+Example:
 
 ```js
-derive(...)
+state
+  .let(passIfDown(lock))
+
+// lock:   1==========0=========>
+// state:  ---s1---s2------s3--->
+// result: -----------s2---s3--->
 ```
 
-#### `deriveN`
+#### `mergeObj :: Object (Obs *) -> Obs *`
 
-Derive a state observable from state observables.
+Merges an object of streams to a stream of objects.
 
-`this` + `combineLatest(...)` + `distinctUntilChanged()` + `shareReplay(1)`
-
-##### Example
+Example:
 
 ```js
-deriveN(...)
+// Describe reactive state declaratively
+let actions = {
+  inc: O.of(c => c + 1).delay(1000),
+  dec: O.of(c => c - 1).delay(2000),
+}
+
+let state = mergeObj(actions)
+ .startWith(seed)
+ .scan((state, fn) => fn(state))
+ .shareReplay(1)
+
+// inc:   ------f------->
+// dec:   ----------f--->
+// state: 0=====1===0===>
 ```
 
-### Lensing
+#### `combineLatestObj :: Object (Obs *) -> Obs *`
 
-#### `pluck`
+Combines an object of streams to a stream of objects.
 
-Make an observable of fragments of upstream values.<br/>
-Like native `.pluck` with nested path support.
-
-##### Example
+Example:
 
 ```js
-intent::pluck("parentNode.dataset")
+// Update React(-like) props whenever stateful streams change
+let streamsToProps = {
+  counterX: db$.pluck("counterX"),
+  counterY: db$.pluck("counterY"),
+}
+
+combineLatestObj(streamsToProps)
+  .throttleTime(10)
+  .subscribe((data) => {
+    this.setState(data)
+  })
+
+// counterX: ===x1========x2===>
+// counterY: ========y1========>
+// result:   ---!----!----!---->
 ```
 
-#### `pluckN`
+#### `mergeObjTracking :: Object (Obs *) -> Obs {key :: String, value :: *}`
 
-Make an observable of a fragment of upstream values.
+Merges an object of streams to a stream of objects, keeping the original key data.
 
-##### Example
+Example:
 
 ```js
-intent::pluckN(["parentNode.dataset1", "parentNode.dataset2"])
+// Track the actions
+let actions = {
+  add: O.of(1, 2).concatMap((fn, i) => O.of(fn).delay(1000)),
+  sub: O.of(3, 4).delay(2000).concatMap((fn, i) => O.of(fn).delay(1000)),
+}
+
+let track = mergeObjTracking(actions)
+track.subscribe(pack => {
+  console.log(pack.key + "(" + pack.data + ")")
+})
+
+// add(1)
+// add(2)
+// sub(3)
+// sub(4)
 ```
 
-#### `view`
+#### `chan :: (Obs a -> Obs b) -> Obs (a -> b)`
 
-Make an observable of a state fragment.<br/>
-`pluck(...)` + `distinctUntilChanged()` + `shareReplay(1)`
+Overloaded: `chan :: a -> ()`
 
-##### Example
+Makes a callable observable.
 
-```js
-state::view("user.email")
-```
+Example: TODo
 
-#### `viewN`
+## License
 
-Make an observable of state fragments.<br/>
-`pluckN(...)` + `distinctUntilChanged()` + `shareReplay(1)`
-
-##### Example
-
-```js
-state::viewN(["user.password", "user.passwordAgain"])
-```
-
-#### `toOverState : String, (u -> (sf -> sf)) -> $ (s -> s)`
-
-Apply function to upstream value, apply resulting function to state fragment.
-
-##### Example
-
-```js
-// createUser : $ User
-createUser::toOverState("users", (u) => assoc(u.id, u))
-// ==
-// createUser : $ User
-createUser.map((u) => (s) => assocPath(["users", u.id], u, s))
-```
-
-#### `toSetState : String, (sf -> sf) -> $ (s -> s)`
-
-Apply function to upstream value, replace state fragment with resulting value.
-
-##### Example
-
-```js
-// resetUsers : $ User
-resetUsers::toSetState("users", (us) => map(..., us))
-// ==
-resetUsers.map((us) => (s) => assoc("users", map(..., us), s))
-```
-
-#### `overState : String, (sf -> sf) -> $ (s -> s)`
-
-Apply function to state fragment. Upstream value does not matter.
-
-##### Example
-
-```js
-// increment : $ Boolean
-increment::overState("counter", (c) => c + 1)
-// ==
-increment.map((_) => (s) => assoc("counter", s.counter + 1, s))
-```
-
-#### `setState : String, v -> $ (s -> s)`
-
-Replace state fragment with a value. Upstream value does not matter.
-
-##### Example
-
-```js
-// reset : $ Boolean
-resetForm::setState("form", seedForm)
-// ==
-resetForm.map((_) => (s) => assoc("form", seedForm, s))
-```
-
-#### `toState : String -> $ (s -> s)`
-
-Replace state fragment with upstream value.
-
-##### Example
-
-```js
-// changeUsername : $ String
-changeUsername::toState("form.username"),
-// ==
-changeUsername.map((v) => (s) => assocPath(["form", "username"], v, s))
-```
-
-### Filtering & sampling
-
-#### `filterBy`
-
-Filter observable by another observable (true = keep).
-
-##### Example
-
-```js
-intent::filterBy(...)
-```
-
-#### `rejectBy`
-
-Filter observable by another observable (true = drop).
-
-##### Example
-
-```js
-intent::rejectBy(...)
-```
-
-#### `at`
-
-Pass upstream value futher if its fragment satisfies a predicate.
-
-##### Example
-
-```js
-flags::at(...)::overState(...)
-```
-
-#### `atTrue`
-
-Pass upstream value futher if its fragment is true.
-
-##### Example
-
-```js
-flags::atTrue(...)::overState(...)
-```
-
-#### `atFalse`
-
-Pass upstream value futher if its fragment is false.
-
-##### Example
-
-```js
-flags::atFalse(...)::overState(...)
-```
-
-### Other
-
-#### `render`
-
-Apply a function over observable values in a glitch-free way.
-
-##### Example
-
-```js
-let DOM = render(gameView, [state, derived.flags])
-```
+MIT
