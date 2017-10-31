@@ -61,7 +61,7 @@ export let mergeObjTracking = (obj) => {
 // chan :: a -> Promise State
 export let chan = (letFn) => {
   let subj = new S()
-  function bus(...callArgs) {
+  function channel(...callArgs) {
     if (callArgs.length <= 1) {
       subj.next(callArgs[0]) // no return value
     }
@@ -70,7 +70,7 @@ export let chan = (letFn) => {
     }
   }
   let obs = letFn(subj)
-  Object.setPrototypeOf(bus, obs)      // support basic calls
-  bus.apply = Function.prototype.apply // support spreads
-  return bus
+  Object.setPrototypeOf(channel, obs)      // support basic calls
+  channel.apply = Function.prototype.apply // support spreads
+  return channel
 }

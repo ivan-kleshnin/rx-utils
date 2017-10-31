@@ -89,7 +89,7 @@ var mergeObjTracking = exports.mergeObjTracking = function mergeObjTracking(obj)
 // chan :: a -> Promise State
 var chan = exports.chan = function chan(letFn) {
   var subj = new _rxjs.Subject();
-  function bus() {
+  function channel() {
     for (var _len2 = arguments.length, callArgs = Array(_len2), _key2 = 0; _key2 < _len2; _key2++) {
       callArgs[_key2] = arguments[_key2];
     }
@@ -101,7 +101,7 @@ var chan = exports.chan = function chan(letFn) {
     }
   }
   var obs = letFn(subj);
-  Object.setPrototypeOf(bus, obs); // support basic calls
-  bus.apply = Function.prototype.apply; // support spreads
-  return bus;
+  Object.setPrototypeOf(channel, obs); // support basic calls
+  channel.apply = Function.prototype.apply; // support spreads
+  return channel;
 };
