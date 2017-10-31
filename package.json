@@ -22,23 +22,14 @@
   "devDependencies": {
     "babel-cli": "^6.26.0",
     "babel-preset-env": "^1.6.1",
-    "rxjs": "^5.5.2"
+    "rxjs": "*"
   },
   "engines": {
     "node": ">=6.0.0"
   },
   "scripts": {
-    "precompile": "rm -rf lib && mkdir -p lib",
-    "compile": "babel src/ -d build/",
-    "prepublish": "npm run compile",
-    "release": "npm run release-patch",
-    "release-patch": "npm version patch && git push origin master --tags && npm publish --access=public",
-    "release-minor": "npm version minor && git push origin master --tags && npm publish --access=public",
-    "release-major": "npm version major && git push origin master --tags && npm publish --access=public"
-  },
-  "babel": {
-    "presets": [
-      "env"
-    ]
+    "prebuld": "rm -rf lib && mkdir -p lib",
+    "build": "babel src/ -d build/",
+    "prepublish": "npm run build"
   }
 }

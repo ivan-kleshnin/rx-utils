@@ -33,7 +33,6 @@ export let curry = function (fn) {
 export let id = x => x
 export let always = curry((x, y) => x)
 export let complement = (fn) => (...args) => !fn(...args)
-export let flip = (fn) => (...args) => fn([...args].reverse())
 
 // Low-level helpers
 export let fst = (xs) => xs[0]
