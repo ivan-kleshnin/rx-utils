@@ -31,5 +31,10 @@
     "prebuld": "rm -rf lib && mkdir -p lib",
     "build": "babel src/ -d build/",
     "prepublish": "npm run build"
+  },
+  "babel": {
+    "presets": [
+      "es2015"
+    ]
   }
 }
