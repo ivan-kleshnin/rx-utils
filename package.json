@@ -15,7 +15,7 @@
     "rxjs",
     "utils"
   ],
-  "main": "build/index.js",
+  "main": "lib/index.js",
   "peerDependencies": {
     "rxjs": "*"
   },
@@ -28,8 +28,8 @@
     "node": ">=6.0.0"
   },
   "scripts": {
-    "prebuild": "rm -rf build && mkdir -p build",
-    "build": "babel src/ -d build/",
+    "prebuild": "rm -rf lib && mkdir -p lib",
+    "build": "babel src/ -d lib/",
     "prepublish": "npm run build"
   },
   "babel": {
