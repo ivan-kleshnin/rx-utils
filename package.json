@@ -28,7 +28,7 @@
     "node": ">=6.0.0"
   },
   "scripts": {
-    "prebuld": "rm -rf lib && mkdir -p lib",
+    "prebuild": "rm -rf build && mkdir -p build",
     "build": "babel src/ -d build/",
     "prepublish": "npm run build"
   },
