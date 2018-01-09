@@ -30,7 +30,8 @@
   "scripts": {
     "prebuild": "rm -rf lib && mkdir -p lib",
     "build": "babel src/ -d lib/",
-    "prepublish": "npm run build"
+    "prepare": "npm run build",
+    "test": "echo \"Error: no tests available\" && exit 0"
   },
   "babel": {
     "presets": [
